@@ -117,6 +117,12 @@ void accessMemory(address addr, word* data, WriteEnable we)
 
   /* Start adding code here */
 
+  //Define and calculate fields
+  int index, offset, tag;
+  offset = addr & uint_log2(block_size);
+  index = (addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
+  tag = addr >> (uint_log2(block_size) + uint_log2(set_count));
+
 
   /* This call to accessDRAM occurs when you modify any of the
      cache parameters. It is provided as a stop gap solution.
