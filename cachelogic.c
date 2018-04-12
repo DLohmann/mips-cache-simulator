@@ -81,21 +81,21 @@ void init_lru(int assoc_index, int block_index)
 
 int readWriteCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
 
-cacheBlock * replacementPolicy()
-{
+// returns a pointer to the block to replace
+cacheBlock * replacementPolicy(cacheSet * set) {
 	cacheBlock * toReplace = NULL;
-	switch (ReplacementPolicy) {
+	switch (policy) {
 	case RANDOM:
-		toReplace = set[randomint(assoc)];
+		toReplace = &(set->block[randomint(assoc)]);	//(cacheBlock *)set[randomint(assoc)];
 		break;
 
 	case LRU:	// find the block with the least lru.value readWriteCount Stamp
-		toReplace = set[0];
+		toReplace = (cacheBlock *)(set->block);	//set[0];
 		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
 											//lru.value will count which read of the system when that block was last read
 											//readWriteCount counts how many reads the system has done
 											// when a read is done, the block(s) read have their lru.value set to readWriteCount. readWriteCount is incremented
-			if (set[i].lru.value < toReplace.lru.value) {
+			if (set.block[i].lru.value < toReplace.lru.value) {
 				toReplace = set[i];
 			}
 		}
@@ -197,7 +197,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		// if code gets here, then no block in the set is invalid.
 		// So we have to replace a valid block, based on the replacement policy
 		//CHOOSE BLOCK TO REPLACE:
-		cacheBlock * toReplace = replacementPolicy();
+		cacheBlock * toReplace = replacementPolicy(set);
 
 		// at this point, we know which block we want to replace. toReplace points to it
 		
@@ -235,6 +235,9 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 		
 		for (int i = 0; i < block_size; i++) {
+			if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
+				continue;
+			}
 			accessDRAM();
 		}
 		
