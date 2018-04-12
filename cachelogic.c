@@ -141,7 +141,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	unsigned int indexMask  =  ((1<<(indexLength )) - 1) << offsetLength;
 	unsigned int tagMask    = (((1<<(tagLength   )) - 1) << offsetLength) << indexLength;
 	
-	printf ("Address is as such:\n");
+	printf ("Address is as such: 0x%x\n", addr);
 	printf ("   %d bit tag    %d bit index    %d bit offset\n", tagLength, indexLength, offsetLength);
 	
 	
