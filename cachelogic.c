@@ -207,8 +207,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			//save cache block to memory
 			
 			
-			// save every byte in block to replace
-			int addrToSave = ((toReplace->tag)<<tagLength) | (index << indexLength);
+			// save every byte in block to replace. Save the entire block from the cache to memory (because it's about to be replaced)
+			int addrToSave = (((toReplace->tag)<<indexLength)<<offsetLength) | (index << offsetLength);
 			for (int i = 0; i < block_size; i++) {	// number of bytes in the block is block_size
 				accessDRAM(addrToSave, (byte*)(toReplace->data[i]), BYTE_SIZE, WRITE);
 				addrToSave = addrToSave + i;
@@ -240,7 +240,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			//if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
 			//	continue;
 			//}
-			accessDRAM();
+			
+			accessDRAM(addrToSave + i, &(blockToAccess[i]), BYTE_SIZE, READ);
 		}
 		
 		//Write to the block from the CPU's data
@@ -253,8 +254,9 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		//	blockToAccess->data[i] = data[i];
 		//}
 		
+		// Write data from CPU to DRAM (it write through policy)
 		if (MemorySyncPolicy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
-			accessDRAM (, WRITE);
+			accessDRAM (addr, (byte *)data, WORD_SIZE, WRITE);
 			blockToAccess->dirty = VIRGIN;
 		}
 		
