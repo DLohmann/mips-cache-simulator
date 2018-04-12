@@ -78,6 +78,8 @@ void init_lru(int assoc_index, int block_index)
 				if we == WRITE, then data used to
 				update Cache/DRAM
 */
+
+int readCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
 void accessMemory(address addr, word* data, WriteEnable we)
 {
 	/* Declare variables here */
@@ -91,13 +93,18 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	 // How many bits are in the (physical) address.
 	 // If the cache is direct mapped, then 
 	int offsetLength = uint_log2(block_size);
-	int indexLength = uint_log2(set_count);
-	int tagLength = 32 - indexLength - offsetLength;
+	int indexLength  = uint_log2(set_count);
+	int tagLength    = 32 - indexLength - offsetLength;
 	
-	int offsetMask =  (1<<(offsetLength)) - 1;
-	int indexMask  = ((1<<(indexLength )) - 1) << offsetLength;
+	int offsetMask =   (1<<(offsetLength)) - 1;
+	int indexMask  =  ((1<<(indexLength )) - 1) << offsetLength;
 	int tagMask    = (((1<<(tagLength   )) - 1) << offsetLength) << indexLength;
 	
+	printf ("Address is as such:\n");
+	printf ("   %d bit tag    %d bit index    %d bit offset\n");
+	
+	
+	/*
 	if (setCount == 1) {
 		//fully associative
 		
@@ -105,14 +112,115 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		//Direct mapped
 		
 	}
-	
+	*/
 	int tag, index, offset;
-	offset = addr & 
-	index = (addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
-	tag = addr >> (uint_log2(block_size) + uint_log2(set_count));
+	offset = addr & offsetMask;
+	index = (addr & indexMask ) >> offsetLength;	//(addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
+	tag =  ((addr & tagMask   ) >> offsetLength) >> indexLength;	//addr >> (uint_log2(block_size) + uint_log2(set_count));
 	
+	
+	
+	cacheSet * set = cache[index];	// find which set to access
+	cacheBlock * blockToAccess = NULL;
+	
+	//Find which row of set corresponds to the c
+	
+	
+	
+	
+	if (WriteEnable == WRITE) {
+		//cache[]
+		
+		
+		// FIND WHICH BLOCK TO WRITE TO
+		// Do this by: Iterate through set, and check if any block in set is invalid
+		for (int i = 0; i < assoc; i++) {
+			if (set.block[i].valid == INVALID) {
+				// If a block in the set is invalid, then use this to write to
+				blockToAccess = set.block[i];
+				goto foundBlockToAccess;
+			}
+		}
+		
+		// if code gets here, then no block in the set is invalid.
+		// So we have to replace a valid block, based on the replacement policy
+		//CHOOSE BLOCK TO REPLACE:
+		cacheBlock * toReplace = NULL;
+		switch (ReplacementPolicy) {
+			case RANDOM:
+				toReplace = set[randomint(assoc)];
+				break;
+				
+			case LRU:	// find the block with the least lru.value readCountStamp
+				toReplace = set[0];
+				for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
+					//lru.value will count which read of the system when that block was last read
+					//readCount counts how many reads the system has done
+					// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
+					if (set[i].lru.value < toReplace.lru.value) {
+						toReplace = set[i];
+					}
+				}
+				// When code gets here, toReplace is a pointer to the LRU block
+				
+				break;
+				
+			case LFU:	// find the block with the least accessCount stamp 
+				toReplace = set[0];
+				for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
+					//lru.value will count which read of the system when that block was last read
+					//readCount counts how many reads the system has done
+					// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
+					if (set[i].accessCount < toReplace.accessCount) {
+						toReplace = set[i];
+					}
+				}
+				// When code gets here, toReplace is a pointer to the LFU block
+				break;
+			
+			default:
+				printf ("Error: unknown replacement policy!!!");
+				return;
+		}
+		// at this point, we know which block we want to replace. toReplace points to it
+		
+		
+		// REPLACE THE BLOCK toReplace
+		
+		// if the block's dirty bit is set, then we must save it to memory before replacing
+		if (toReplace.dirty == DIRTY) {
+			//save cache block to memory
+			int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
+			
+			// save every byte in block to replace
+			for (int i = 0; i < block_size; i) {	// number of bytes in the block is block_size
+				accessDRAM(addrToSave, (byte*)(toReplace[i]), BYTE_SIZE, WRITE);
+				addrToSave = addrToSave + i;
+			}
+			//addrToSave = (tag << indexLength) << offsetLength;
+			//addrToSave = //addrToSave | (index << offsetLength);
+			
+		}
+		
+		//if (memory_sync_policy == WRITE_BACK) {
+			// if th
+		//}
+		
+		
+		foundBlockToAccess:	// toReplace is now set to the block to replace
+		
+		
+		
+		
+	} else if (WriteEnable == READ) {
+		
+	} else {
+		printf ("Error: neither read nor write!!!\n");
+	}
 	
 	cacheBlock block = cache[index].block[offset]; 
+	
+	
 	if (block.dirty) {
 		
 	} 
@@ -155,5 +263,17 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	 At some point, ONCE YOU HAVE MORE OF YOUR CACHELOGIC IN PLACE,
 	 THIS LINE SHOULD BE REMOVED.
 	*/
-	accessDRAM(addr, (byte*)data, WORD_SIZE, we);
+	
+	/*
+	if () {
+		
+		
+	}
+	
+	if (memory_sync_policy == WRITE_BACK) {
+		
+		
+	}
+	*/
+	//accessDRAM(addr, (byte*)data, WORD_SIZE, we);
 }
