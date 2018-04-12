@@ -101,7 +101,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	int tagMask    = (((1<<(tagLength   )) - 1) << offsetLength) << indexLength;
 	
 	printf ("Address is as such:\n");
-	printf ("   %d bit tag    %d bit index    %d bit offset\n");
+	printf ("   %d bit tag    %d bit index    %d bit offset\n", offsetLength, indexLength, tagLength);
 	
 	
 	/*
@@ -118,8 +118,8 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	index = (addr & indexMask ) >> offsetLength;	//(addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
 	tag =  ((addr & tagMask   ) >> offsetLength) >> indexLength;	//addr >> (uint_log2(block_size) + uint_log2(set_count));
 	
-	
-	
+	addrToSave
+	int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 	cacheSet * set = cache[index];	// find which set to access
 	cacheBlock * blockToAccess = NULL;
 	
@@ -138,7 +138,8 @@ void accessMemory(address addr, word* data, WriteEnable we)
 			if (set.block[i].valid == INVALID) {
 				// If a block in the set is invalid, then use this to write to
 				blockToAccess = set.block[i];
-				goto foundBlockToAccess;
+				blockToAccess.valid = VALID;
+				goto writeBlockToMem;
 			}
 		}
 		
@@ -186,17 +187,17 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 		
 		// REPLACE THE BLOCK toReplace
-		
 		// if the block's dirty bit is set, then we must save it to memory before replacing
 		if (toReplace.dirty == DIRTY) {
 			//save cache block to memory
-			int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
+			
 			
 			// save every byte in block to replace
 			for (int i = 0; i < block_size; i) {	// number of bytes in the block is block_size
-				accessDRAM(addrToSave, (byte*)(toReplace[i]), BYTE_SIZE, WRITE);
+				accessDRAM(addrToSave, (byte*)(toReplace.data[i]), BYTE_SIZE, WRITE);
 				addrToSave = addrToSave + i;
 			}
+			//at this point, the entire block should be saved to DRAM
 			//addrToSave = (tag << indexLength) << offsetLength;
 			//addrToSave = //addrToSave | (index << offsetLength);
 			
@@ -207,9 +208,29 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		//}
 		
 		
-		foundBlockToAccess:	// toReplace is now set to the block to replace
+		writeBlockToMem:	// toReplace is now set to the block to replace
+		blockToAccess = toReplace;
+		//WRITE THE BLOCK TO THE CACHE. 
 		
+		blockToAccess.dirty = DIRTY;
+		blockToAccess.tag = tag;
 		
+		for (int i = 0; i < block_size; i++) {
+			accessDRAM();
+		}
+		
+		blockToAccess.data[offset    ] = (word >> 24) & 0xFF;
+		blockToAccess.data[offset + 1] = (word >> 16) & 0xFF;
+		blockToAccess.data[offset + 2] = (word >>  8) & 0xFF;
+		blockToAccess.data[offset + 3] = (word      ) & 0xFF;
+		
+		//for (int i = 0; i < block_size; i++) {
+		//	blockToAccess.data[i] = data[i];
+		//}
+		
+		if (MemorySyncPolicy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
+			accessDRAM (, WRITE);
+		}
 		
 		
 	} else if (WriteEnable == READ) {
