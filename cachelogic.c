@@ -264,15 +264,22 @@ void accessMemory(address addr, word* data, WriteEnable we)
 			if (set.block[i].tag == tag && set.block[i].valid == VALID)
 			{
 				memcpy(data, &set.block[i].data, WORD_SIZE);
+				set.block[i].lru.value = readWriteCount;
+				set.block[i].accessCount++;
 				return;
 			}
 		}
 
-		cacheBlock * toReplace = replacementPolicy();
+		cacheBlock * toReplace = replacementPolicy(set);
 
 		//Nothing in cache. Load from memory.
 		//Load from memory into cache
 		accessDRAM(addr, (byte*)toReplace, WORD_SIZE, READ);
+		//set valid bit
+		toReplace->valid = VALID;
+		//set LRU and accessCount
+		toReplace->lru.value = readWriteCount;
+		toReplace->accessCount = 1;
 		//Now load from cache to requested address.
 		memcpy(data, &toReplace, WORD_SIZE);
 
