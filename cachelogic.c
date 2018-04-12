@@ -252,6 +252,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
 		blockToAccess->lru.value = readWriteCount++;
 		blockToAccess->accessCount += 1;
+		blockToAccess->dirty = DIRTY;
 		//for (int i = 0; i < block_size; i++) {
 		//	blockToAccess->data[i] = data[i];
 		//}
@@ -280,16 +281,59 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 
 		cacheBlock * toReplace = replacementPolicy(set);
 
+		
+		// REPLACE THE BLOCK toReplace
+		// if the block's dirty bit is set, then we must save it to memory before replacing
+		if (toReplace->dirty == DIRTY) {
+			//save cache block to memory
+			
+			
+			// save every byte in block to replace. Save the entire block from the cache to memory (because it's about to be replaced)
+			int addrToSave = (((toReplace->tag)<<indexLength)<<offsetLength) | (index << offsetLength);
+			for (int i = 0; i < block_size; i++) {	// number of bytes in the block is block_size
+				accessDRAM(addrToSave, (byte*)(toReplace->data[i]), BYTE_SIZE, WRITE);
+				addrToSave = addrToSave + i;
+			}
+			//at this point, the entire block should be saved to DRAM
+			//addrToSave = (tag << indexLength) << offsetLength;
+			//addrToSave = //addrToSave | (index << offsetLength);
+			blockToAccess->dirty = VIRGIN;
+		}
+		
+		//if (memory_sync_policy == WRITE_BACK) {
+			// if th
+		//}
+		blockToAccess = toReplace;
+		
+		blockToAccess->tag = tag;
+		
+		
 		//Nothing in cache. Load from memory.
 		//Load from memory into cache
-		accessDRAM(addr, (byte*)toReplace, WORD_SIZE, READ);
+		//accessDRAM(addr, (byte*)toReplace, WORD_SIZE, READ);
+		
+		// LOAD BLOCK FROM MEMORY TO CACHE
+		// Load the entire cache block from memory to cache before reading to CPU's from cache block 
+		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
+		for (int i = 0; i < block_size; i++) {
+			//if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
+			//	continue;
+			//}
+			
+			accessDRAM(addrToSave + i, &(blockToAccess[i]), BYTE_SIZE, READ);
+		}
+		
+		
+		
 		//set valid bit
 		toReplace->valid = VALID;
 		//set LRU and accessCount
-		toReplace->lru.value = readWriteCount;
-		toReplace->accessCount = 1;
+		//set->block[i].lru.value = readWriteCount++;
+		//set->block[i].accessCount++;
+		toReplace->lru.value = readWriteCount++;
+		toReplace->accessCount++;
 		//Now load from cache to requested address.
-		memcpy(data, &toReplace->data[offset], 4);
+		memcpy(data, &(toReplace->data[offset]), 4);
 
 	} else {
 		printf ("Error: neither read nor write!!!\n");
