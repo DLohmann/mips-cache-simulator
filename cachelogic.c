@@ -262,9 +262,9 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		{
 			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
-				memcpy(data, &set.block[i].data, WORD_SIZE);
-				set.block[i].lru.value = readWriteCount;
-				set.block[i].accessCount++;
+				memcpy(data, &set->block[i].data, WORD_SIZE);
+				set->block[i].lru.value = readWriteCount;
+				set->block[i].accessCount++;
 				return;
 			}
 		}
@@ -345,5 +345,4 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	*/
 	//accessDRAM(addr, (byte*)data, WORD_SIZE, we);
 
-	}
 }
