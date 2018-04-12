@@ -255,7 +255,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		//}
 		
 		// Write data from CPU to DRAM (it write through policy)
-		if (MemorySyncPolicy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
+		if (memory_sync_policy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
 			accessDRAM (addr, (byte *)data, WORD_SIZE, WRITE);
 			blockToAccess->dirty = VIRGIN;
 		}
