@@ -134,13 +134,13 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	
 	 // How many bits are in the (physical) address.
 	 // If the cache is direct mapped, then 
-	int offsetLength = uint_log2(block_size);
-	int indexLength  = uint_log2(set_count);
-	int tagLength    = 32 - indexLength - offsetLength;
+	unsigned int offsetLength = uint_log2(block_size);
+	unsigned int indexLength  = uint_log2(set_count);
+	unsigned int tagLength    = 32 - indexLength - offsetLength;
 	
-	int offsetMask =   (1<<(offsetLength)) - 1;
-	int indexMask  =  ((1<<(indexLength )) - 1) << offsetLength;
-	int tagMask    = (((1<<(tagLength   )) - 1) << offsetLength) << indexLength;
+	unsigned int offsetMask =   (1<<(offsetLength)) - 1;
+	unsigned int indexMask  =  ((1<<(indexLength )) - 1) << offsetLength;
+	unsigned int tagMask    = (((1<<(tagLength   )) - 1) << offsetLength) << indexLength;
 	
 	printf ("Address is as such:\n");
 	printf ("   %d bit tag    %d bit index    %d bit offset\n", offsetLength, indexLength, tagLength);
@@ -155,7 +155,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 	}
 	*/
-	int tag, index, offset;
+	unsigned int tag, index, offset;
 	offset = addr & offsetMask;
 	index = (addr & indexMask ) >> offsetLength;	//(addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
 	tag =  ((addr & tagMask   ) >> offsetLength) >> indexLength;	//addr >> (uint_log2(block_size) + uint_log2(set_count));
@@ -177,7 +177,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		// FIND WHICH BLOCK TO WRITE TO
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) {
-			if (set.block[i].valid == INVALID) {
+			if (set.block[i].valid == INVALID || set.block[i].tag == tag) {
 				// If a block in the set is invalid, then use this to write to
 				blockToAccess = set.block[i];
 				blockToAccess.valid = VALID;
@@ -213,14 +213,17 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		//if (memory_sync_policy == WRITE_BACK) {
 			// if th
 		//}
-		
+		blockToAccess = toReplace;
 		
 		writeBlockToMem:	// toReplace is now set to the block to replace
-		blockToAccess = toReplace;
+		
 		//WRITE THE BLOCK TO THE CACHE. 
 		
 		blockToAccess.dirty = DIRTY;
-		blockToAccess.tag = tag;
+		if (blockToAccess.tag != tag) {	// cache miss
+			blockToAccess.tag = tag;
+		}
+		
 		
 		for (int i = 0; i < block_size; i++) {
 			accessDRAM();
@@ -237,6 +240,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 		if (MemorySyncPolicy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
 			accessDRAM (, WRITE);
+			blockToAccess.dirty = VIRGIN;
 		}
 		
 		
