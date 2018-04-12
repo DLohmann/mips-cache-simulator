@@ -265,8 +265,13 @@ void accessMemory(address addr, word* data, WriteEnable we)
 			}
 		}
 
+		cacheBlock * toReplace = replacementPolicy();
+
 		//Nothing in cache. Load from memory.
-		accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
+		//Load from memory into cache
+		accessDRAM(addr, (byte*)toReplace, WORD_SIZE, READ);
+		//Now load from cache to requested address.
+		memcpy(data, &toReplace, WORD_SIZE);
 
 	} else {
 		printf ("Error: neither read nor write!!!\n");
