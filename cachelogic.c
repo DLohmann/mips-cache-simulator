@@ -123,6 +123,19 @@ void accessMemory(address addr, word* data, WriteEnable we)
   index = (addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
   tag = addr >> (uint_log2(block_size) + uint_log2(set_count));
 
+  cacheBlock block = cache[index].block[offset];
+
+  //TODO: LRU stuff
+
+  //TODO: check tag
+
+  //TODO: Write back first before operating on this block
+  if (block.dirty)
+  {
+	  
+  }
+
+
 
   /* This call to accessDRAM occurs when you modify any of the
      cache parameters. It is provided as a stop gap solution.
