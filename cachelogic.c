@@ -80,6 +80,48 @@ void init_lru(int assoc_index, int block_index)
 */
 
 int readCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
+
+cacheBlock * replacementPolicy()
+{
+	cacheBlock * toReplace = NULL;
+	switch (ReplacementPolicy) {
+	case RANDOM:
+		toReplace = set[randomint(assoc)];
+		break;
+
+	case LRU:	// find the block with the least lru.value readCountStamp
+		toReplace = set[0];
+		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
+											//lru.value will count which read of the system when that block was last read
+											//readCount counts how many reads the system has done
+											// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
+			if (set[i].lru.value < toReplace.lru.value) {
+				toReplace = set[i];
+			}
+		}
+		// When code gets here, toReplace is a pointer to the LRU block
+
+		break;
+
+	case LFU:	// find the block with the least accessCount stamp 
+		toReplace = set[0];
+		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
+											//lru.value will count which read of the system when that block was last read
+											//readCount counts how many reads the system has done
+											// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
+			if (set[i].accessCount < toReplace.accessCount) {
+				toReplace = set[i];
+			}
+		}
+		// When code gets here, toReplace is a pointer to the LFU block
+		break;
+
+	default:
+		printf("Error: unknown replacement policy!!!");
+		return;
+	}
+	return toReplace;
+}
 void accessMemory(address addr, word* data, WriteEnable we)
 {
 	/* Declare variables here */
@@ -146,43 +188,8 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		// if code gets here, then no block in the set is invalid.
 		// So we have to replace a valid block, based on the replacement policy
 		//CHOOSE BLOCK TO REPLACE:
-		cacheBlock * toReplace = NULL;
-		switch (ReplacementPolicy) {
-			case RANDOM:
-				toReplace = set[randomint(assoc)];
-				break;
-				
-			case LRU:	// find the block with the least lru.value readCountStamp
-				toReplace = set[0];
-				for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
-					//lru.value will count which read of the system when that block was last read
-					//readCount counts how many reads the system has done
-					// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
-					if (set[i].lru.value < toReplace.lru.value) {
-						toReplace = set[i];
-					}
-				}
-				// When code gets here, toReplace is a pointer to the LRU block
-				
-				break;
-				
-			case LFU:	// find the block with the least accessCount stamp 
-				toReplace = set[0];
-				for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
-					//lru.value will count which read of the system when that block was last read
-					//readCount counts how many reads the system has done
-					// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
-					if (set[i].accessCount < toReplace.accessCount) {
-						toReplace = set[i];
-					}
-				}
-				// When code gets here, toReplace is a pointer to the LFU block
-				break;
-			
-			default:
-				printf ("Error: unknown replacement policy!!!");
-				return;
-		}
+		cacheBlock * toReplace = replacementPolicy();
+
 		// at this point, we know which block we want to replace. toReplace points to it
 		
 		
@@ -234,7 +241,20 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 		
 	} else if (WriteEnable == READ) {
-		
+		// FIND WHICH BLOCK TO read from
+		// Do this by: Iterate through set, and check if any block in set is invalid
+		for (int i = 0; i < assoc; i++) 
+		{
+			if (set.block[i].tag == tag && set.block[i].valid == VALID)
+			{
+				memcpy(data, &set.block[i].data, WORD_SIZE);
+				return;
+			}
+		}
+
+		//Nothing in cache. Load from memory.
+		accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
+
 	} else {
 		printf ("Error: neither read nor write!!!\n");
 	}
