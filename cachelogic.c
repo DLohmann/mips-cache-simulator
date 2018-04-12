@@ -66,19 +66,6 @@ void init_lru(int assoc_index, int block_index)
 	cache[assoc_index].block[block_index].lru.value = 0;
 }
 
-/*
-	This is the primary function you are filling out,
-	You are free to add helper functions if you need them
-
-	@param addr 32-bit byte address
-	@param data a pointer to a SINGLE word (32-bits of data)
-	@param we	if we == READ, then data used to return
-				information back to CPU
-
-				if we == WRITE, then data used to
-				update Cache/DRAM
-*/
-
 int readWriteCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
 
 // returns a pointer to the block to replace
@@ -95,8 +82,8 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 											//lru.value will count which read of the system when that block was last read
 											//readWriteCount counts how many reads the system has done
 											// when a read is done, the block(s) read have their lru.value set to readWriteCount. readWriteCount is incremented
-			if (set.block[i].lru.value < toReplace.lru.value) {
-				toReplace = set[i];
+			if (set->block[i].lru.value < toReplace->lru.value) {
+				toReplace = &(set->block[i]);
 			}
 		}
 		// When code gets here, toReplace is a pointer to the LRU block
@@ -104,13 +91,13 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 		break;
 
 	case LFU:	// find the block with the least accessCount stamp 
-		toReplace = set[0];
+		toReplace = &(set->block[0]);
 		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
 											//lru.value will count which read of the system when that block was last read
 											//readWriteCount counts how many reads the system has done
 											// when a read is done, the block(s) read have their lru.value set to readWriteCount. readWriteCount is incremented
-			if (set[i].accessCount < toReplace.accessCount) {
-				toReplace = set[i];
+			if (set->block[i].accessCount < toReplace->accessCount) {
+				toReplace = &(set->block[i]);
 			}
 		}
 		// When code gets here, toReplace is a pointer to the LFU block
@@ -118,12 +105,24 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 
 	default:
 		printf("Error: unknown replacement policy!!!");
-		return;
+		return NULL;
 	}
 	return toReplace;
 }
-void accessMemory(address addr, word* data, WriteEnable we)
-{
+
+/*
+	This is the primary function you are filling out,
+	You are free to add helper functions if you need them
+
+	@param addr 32-bit byte address
+	@param data a pointer to a SINGLE word (32-bits of data)
+	@param we	if we == READ, then data used to return
+				information back to CPU
+
+				if we == WRITE, then data used to
+				update Cache/DRAM
+*/
+void accessMemory(address addr, word* data, WriteEnable we) {
 	/* Declare variables here */
 	readWriteCount ++;
 	/* handle the case of no cache at all - leave this in */
@@ -160,9 +159,9 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	index = (addr & indexMask ) >> offsetLength;	//(addr >> uint_log2(block_size)) & uint_log2(set_count); //First "substring" address to block_size
 	tag =  ((addr & tagMask   ) >> offsetLength) >> indexLength;	//addr >> (uint_log2(block_size) + uint_log2(set_count));
 	
-	addrToSave
+	
 	int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
-	cacheSet * set = cache[index];	// find which set to access
+	cacheSet * set = &(cache[index]);	// find which set to access
 	cacheBlock * blockToAccess = NULL;
 	
 	//Find which row of set corresponds to the c
@@ -170,26 +169,26 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	
 	
 	
-	if (WriteEnable == WRITE) {
+	if (we == WRITE) {
 		//cache[]
 		
 		
 		// FIND WHICH BLOCK TO WRITE TO
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) {
-			if (set.block[i].tag == tag) {	// cache hit!!!
-				blockToAccess.data[offset    ] = (word >> 24) & 0xFF;
-				blockToAccess.data[offset + 1] = (word >> 16) & 0xFF;
-				blockToAccess.data[offset + 2] = (word >>  8) & 0xFF;
-				blockToAccess.data[offset + 3] = (word      ) & 0xFF;
-				blockToAccess.accessCount += 1;
-				blockToAccess.lru.value = readWriteCount;
+			if (set->block[i].tag == tag) {	// cache hit!!!
+				blockToAccess->data[offset    ] = (*data >> 24) & 0xFF;
+				blockToAccess->data[offset + 1] = (*data >> 16) & 0xFF;
+				blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
+				blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
+				blockToAccess->accessCount += 1;
+				blockToAccess->lru.value = readWriteCount;
 				return;
 			}
-			if (set.block[i].valid == INVALID) {
+			if (set->block[i].valid == INVALID) {
 				// If a block in the set is invalid, then use this to write to
-				blockToAccess = set.block[i];
-				blockToAccess.valid = VALID;
+				blockToAccess = &(set->block[i]);
+				blockToAccess->valid = VALID;
 				goto writeBlockToMem;
 			}
 		}
@@ -204,13 +203,13 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 		// REPLACE THE BLOCK toReplace
 		// if the block's dirty bit is set, then we must save it to memory before replacing
-		if (toReplace.dirty == DIRTY) {
+		if (toReplace->dirty == DIRTY) {
 			//save cache block to memory
 			
 			
 			// save every byte in block to replace
-			for (int i = 0; i < block_size; i) {	// number of bytes in the block is block_size
-				accessDRAM(addrToSave, (byte*)(toReplace.data[i]), BYTE_SIZE, WRITE);
+			for (int i = 0; i < block_size; i++) {	// number of bytes in the block is block_size
+				accessDRAM(addrToSave, (byte*)(toReplace->data[i]), BYTE_SIZE, WRITE);
 				addrToSave = addrToSave + i;
 			}
 			//at this point, the entire block should be saved to DRAM
@@ -228,9 +227,9 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		
 		//WRITE THE BLOCK TO THE CACHE. 
 		
-		blockToAccess.dirty = DIRTY;
-		if (blockToAccess.tag != tag) {	// cache miss
-			blockToAccess.tag = tag;
+		blockToAccess->dirty = DIRTY;
+		if (blockToAccess->tag != tag) {	// cache miss
+			blockToAccess->tag = tag;
 		}
 		
 		
@@ -241,27 +240,27 @@ void accessMemory(address addr, word* data, WriteEnable we)
 			accessDRAM();
 		}
 		
-		blockToAccess.data[offset    ] = (word >> 24) & 0xFF;
-		blockToAccess.data[offset + 1] = (word >> 16) & 0xFF;
-		blockToAccess.data[offset + 2] = (word >>  8) & 0xFF;
-		blockToAccess.data[offset + 3] = (word      ) & 0xFF;
+		blockToAccess->data[offset    ] = (*data >> 24) & 0xFF;
+		blockToAccess->data[offset + 1] = (*data >> 16) & 0xFF;
+		blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
+		blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
 		
 		//for (int i = 0; i < block_size; i++) {
-		//	blockToAccess.data[i] = data[i];
+		//	blockToAccess->data[i] = data[i];
 		//}
 		
 		if (MemorySyncPolicy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
 			accessDRAM (, WRITE);
-			blockToAccess.dirty = VIRGIN;
+			blockToAccess->dirty = VIRGIN;
 		}
 		
 		
-	} else if (WriteEnable == READ) {
+	} else if (we == READ) {
 		// FIND WHICH BLOCK TO read from
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) 
 		{
-			if (set.block[i].tag == tag && set.block[i].valid == VALID)
+			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
 				memcpy(data, &set.block[i].data, WORD_SIZE);
 				set.block[i].lru.value = readWriteCount;
@@ -286,14 +285,14 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	} else {
 		printf ("Error: neither read nor write!!!\n");
 	}
-	
+
 	cacheBlock block = cache[index].block[offset]; 
-	
-	
+
+
 	if (block.dirty) {
 		
 	} 
-	
+
 	/*
 	You need to read/write between memory (via the accessDRAM() function) and
 	the cache (via the cache[] global structure defined in tips.h)
@@ -324,7 +323,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	/* Start adding code here */
 
 	//Define and calculate fields
-	
+
 
 
 	/* This call to accessDRAM occurs when you modify any of the
@@ -332,17 +331,19 @@ void accessMemory(address addr, word* data, WriteEnable we)
 	 At some point, ONCE YOU HAVE MORE OF YOUR CACHELOGIC IN PLACE,
 	 THIS LINE SHOULD BE REMOVED.
 	*/
-	
+
 	/*
 	if () {
 		
 		
 	}
-	
+
 	if (memory_sync_policy == WRITE_BACK) {
 		
 		
 	}
 	*/
 	//accessDRAM(addr, (byte*)data, WORD_SIZE, we);
+
+	}
 }
