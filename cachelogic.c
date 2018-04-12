@@ -262,7 +262,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		{
 			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
-				memcpy(data, &set->block[i].data, WORD_SIZE);
+				memcpy(data, &(set->block[i].data[offset]), WORD_SIZE);
 				set->block[i].lru.value = readWriteCount;
 				set->block[i].accessCount++;
 				return;
@@ -280,7 +280,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		toReplace->lru.value = readWriteCount;
 		toReplace->accessCount = 1;
 		//Now load from cache to requested address.
-		memcpy(data, &toReplace, WORD_SIZE);
+		memcpy(data, &toReplace->data[offset], WORD_SIZE);
 
 	} else {
 		printf ("Error: neither read nor write!!!\n");
