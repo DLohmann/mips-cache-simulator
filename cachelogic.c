@@ -141,8 +141,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	unsigned int indexMask  =  ((1<<(indexLength )) - 1) << offsetLength;
 	unsigned int tagMask    = (((1<<(tagLength   )) - 1) << offsetLength) << indexLength;
 	
-	printf ("Address is as such:\n");
-	printf ("   %d bit tag    %d bit index    %d bit offset\n", offsetLength, indexLength, tagLength);
+	printf ("Address is as such: 0x%x\n", addr);
+	printf ("   %d bit tag    %d bit index    %d bit offset\n", tagLength, indexLength, offsetLength);
 	
 	
 	/*
@@ -171,6 +171,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	
 	if (we == WRITE) {
 		//cache[]
+		printf("It's a write!");
 		
 		
 		// FIND WHICH BLOCK TO WRITE TO
@@ -256,13 +257,14 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		//}
 		
 		// Write data from CPU to DRAM (it write through policy)
-		if (MemorySyncPolicy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
+		if (memory_sync_policy == WRITE_THROUGH) {	// if there is a write through policy, then also write the data to DRAM
 			accessDRAM (addr, (byte *)data, WORD_SIZE, WRITE);
 			blockToAccess->dirty = VIRGIN;
 		}
 		
 		
 	} else if (we == READ) {
+		printf("It's a read!");
 		// FIND WHICH BLOCK TO read from
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) 
