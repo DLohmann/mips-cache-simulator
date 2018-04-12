@@ -171,6 +171,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	
 	if (we == WRITE) {
 		//cache[]
+		printf("It's a write!");
 		
 		
 		// FIND WHICH BLOCK TO WRITE TO
@@ -262,6 +263,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		
 		
 	} else if (we == READ) {
+		printf("It's a read!");
 		// FIND WHICH BLOCK TO read from
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) 
