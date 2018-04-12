@@ -160,7 +160,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	tag =  ((addr & tagMask   ) >> offsetLength) >> indexLength;	//addr >> (uint_log2(block_size) + uint_log2(set_count));
 	
 	
-	int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
+	
 	cacheSet * set = &(cache[index]);	// find which set to access
 	cacheBlock * blockToAccess = NULL;
 	
@@ -208,6 +208,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			
 			
 			// save every byte in block to replace
+			int addrToSave = ((toReplace->tag)<<tagLength) | (index << indexLength);
 			for (int i = 0; i < block_size; i++) {	// number of bytes in the block is block_size
 				accessDRAM(addrToSave, (byte*)(toReplace->data[i]), BYTE_SIZE, WRITE);
 				addrToSave = addrToSave + i;
@@ -215,7 +216,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			//at this point, the entire block should be saved to DRAM
 			//addrToSave = (tag << indexLength) << offsetLength;
 			//addrToSave = //addrToSave | (index << offsetLength);
-			
+			blockToAccess->dirty = VIRGIN;
 		}
 		
 		//if (memory_sync_policy == WRITE_BACK) {
@@ -223,23 +224,26 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		//}
 		blockToAccess = toReplace;
 		
+		
+		/////////////////////////////WRITE THE BLOCK FROM CPU TO CACHE///////////////////////////////////////////
 		writeBlockToMem:	// toReplace is now set to the block to replace
-		
-		//WRITE THE BLOCK TO THE CACHE. 
-		
-		blockToAccess->dirty = DIRTY;
-		if (blockToAccess->tag != tag) {	// cache miss
-			blockToAccess->tag = tag;
-		}
+
+		//blockToAccess->dirty = DIRTY;
+		//if (blockToAccess->tag != tag) {	// cache miss
+		blockToAccess->tag = tag;
+		//}
 		
 		
+		// Load the entire cache block from memory to cache before writing from CPU's data to cache block 
+		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 		for (int i = 0; i < block_size; i++) {
-			if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
-				continue;
-			}
+			//if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
+			//	continue;
+			//}
 			accessDRAM();
 		}
 		
+		//Write to the block from the CPU's data
 		blockToAccess->data[offset    ] = (*data >> 24) & 0xFF;
 		blockToAccess->data[offset + 1] = (*data >> 16) & 0xFF;
 		blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
