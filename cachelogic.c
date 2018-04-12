@@ -124,7 +124,7 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 */
 void accessMemory(address addr, word* data, WriteEnable we) {
 	/* Declare variables here */
-	readWriteCount ++;
+	//readWriteCount ++;
 	/* handle the case of no cache at all - leave this in */
 	if(assoc == 0) {
 		accessDRAM(addr, (byte*)data, WORD_SIZE, we);
@@ -182,7 +182,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 				blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
 				blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
 				blockToAccess->accessCount += 1;
-				blockToAccess->lru.value = readWriteCount;
+				blockToAccess->lru.value = readWriteCount++;
 				return;
 			}
 			if (set->block[i].valid == INVALID) {
@@ -233,7 +233,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		blockToAccess->tag = tag;
 		//}
 		
-		
+		// LOAD BLOCK FROM MEMORY TO CACHE
 		// Load the entire cache block from memory to cache before writing from CPU's data to cache block 
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 		for (int i = 0; i < block_size; i++) {
@@ -249,7 +249,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		blockToAccess->data[offset + 1] = (*data >> 16) & 0xFF;
 		blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
 		blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
-		
+		blockToAccess->lru.value = readWriteCount++;
+		blockToAccess->accessCount += 1;
 		//for (int i = 0; i < block_size; i++) {
 		//	blockToAccess->data[i] = data[i];
 		//}
@@ -268,8 +269,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		{
 			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
-				memcpy(data, &(set->block[i].data[offset]), WORD_SIZE);
-				set->block[i].lru.value = readWriteCount;
+				memcpy(data, &(set->block[i].data[offset]), 4);	// WORD_SIZE correspondsto 4 bytes
+				set->block[i].lru.value = readWriteCount++;
 				set->block[i].accessCount++;
 				return;
 			}
@@ -286,7 +287,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		toReplace->lru.value = readWriteCount;
 		toReplace->accessCount = 1;
 		//Now load from cache to requested address.
-		memcpy(data, &toReplace->data[offset], WORD_SIZE);
+		memcpy(data, &toReplace->data[offset], 4);
 
 	} else {
 		printf ("Error: neither read nor write!!!\n");
@@ -295,9 +296,9 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 	cacheBlock block = cache[index].block[offset]; 
 
 
-	if (block.dirty) {
+	//if (block.dirty) {
 		
-	} 
+	//} 
 
 	/*
 	You need to read/write between memory (via the accessDRAM() function) and
