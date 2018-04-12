@@ -211,7 +211,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			// save every byte in block to replace. Save the entire block from the cache to memory (because it's about to be replaced)
 			int addrToSave = (((toReplace->tag)<<indexLength)<<offsetLength) | (index << offsetLength);
 			for (int i = 0; i < block_size; i++) {	// number of bytes in the block is block_size
-				accessDRAM(addrToSave, (byte*)(toReplace->data[i]), BYTE_SIZE, WRITE);
+				accessDRAM(addrToSave, (byte*)&(toReplace->data[i]), BYTE_SIZE, WRITE);
 				addrToSave = addrToSave + i;
 			}
 			//at this point, the entire block should be saved to DRAM
@@ -242,7 +242,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			//	continue;
 			//}
 			
-			accessDRAM(addrToSave + i, &(blockToAccess[i]), BYTE_SIZE, READ);
+			accessDRAM(addrToSave + i, (byte*)&(blockToAccess[i]), BYTE_SIZE, READ);
 		}
 		
 		//Write to the block from the CPU's data
@@ -291,7 +291,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			// save every byte in block to replace. Save the entire block from the cache to memory (because it's about to be replaced)
 			int addrToSave = (((toReplace->tag)<<indexLength)<<offsetLength) | (index << offsetLength);
 			for (int i = 0; i < block_size; i++) {	// number of bytes in the block is block_size
-				accessDRAM(addrToSave, (byte*)(toReplace->data[i]), BYTE_SIZE, WRITE);
+				accessDRAM(addrToSave, (byte*)&(toReplace->data[i]), BYTE_SIZE, WRITE);
 				addrToSave = addrToSave + i;
 			}
 			//at this point, the entire block should be saved to DRAM
@@ -320,7 +320,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			//	continue;
 			//}
 			
-			accessDRAM(addrToSave + i, &(blockToAccess[i]), BYTE_SIZE, READ);
+			accessDRAM(addrToSave + i, (byte *)&(blockToAccess[i]), BYTE_SIZE, READ);
 		}
 		
 		
@@ -339,7 +339,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		printf ("Error: neither read nor write!!!\n");
 	}
 
-	cacheBlock block = cache[index].block[offset]; 
+	//cacheBlock block = cache[index].block[offset]; 
 
 
 	//if (block.dirty) {
