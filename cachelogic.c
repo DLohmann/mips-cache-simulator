@@ -79,7 +79,7 @@ void init_lru(int assoc_index, int block_index)
 				update Cache/DRAM
 */
 
-int readCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
+int readWriteCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
 
 cacheBlock * replacementPolicy()
 {
@@ -89,12 +89,12 @@ cacheBlock * replacementPolicy()
 		toReplace = set[randomint(assoc)];
 		break;
 
-	case LRU:	// find the block with the least lru.value readCountStamp
+	case LRU:	// find the block with the least lru.value readWriteCount Stamp
 		toReplace = set[0];
 		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
 											//lru.value will count which read of the system when that block was last read
-											//readCount counts how many reads the system has done
-											// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
+											//readWriteCount counts how many reads the system has done
+											// when a read is done, the block(s) read have their lru.value set to readWriteCount. readWriteCount is incremented
 			if (set[i].lru.value < toReplace.lru.value) {
 				toReplace = set[i];
 			}
@@ -107,8 +107,8 @@ cacheBlock * replacementPolicy()
 		toReplace = set[0];
 		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
 											//lru.value will count which read of the system when that block was last read
-											//readCount counts how many reads the system has done
-											// when a read is done, the block(s) read have their lru.value set to readCount. readCount is incremented
+											//readWriteCount counts how many reads the system has done
+											// when a read is done, the block(s) read have their lru.value set to readWriteCount. readWriteCount is incremented
 			if (set[i].accessCount < toReplace.accessCount) {
 				toReplace = set[i];
 			}
@@ -125,7 +125,7 @@ cacheBlock * replacementPolicy()
 void accessMemory(address addr, word* data, WriteEnable we)
 {
 	/* Declare variables here */
-
+	readWriteCount ++;
 	/* handle the case of no cache at all - leave this in */
 	if(assoc == 0) {
 		accessDRAM(addr, (byte*)data, WORD_SIZE, we);
@@ -177,7 +177,16 @@ void accessMemory(address addr, word* data, WriteEnable we)
 		// FIND WHICH BLOCK TO WRITE TO
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) {
-			if (set.block[i].valid == INVALID || set.block[i].tag == tag) {
+			if (set.block[i].tag == tag) {	// cache hit!!!
+				blockToAccess.data[offset    ] = (word >> 24) & 0xFF;
+				blockToAccess.data[offset + 1] = (word >> 16) & 0xFF;
+				blockToAccess.data[offset + 2] = (word >>  8) & 0xFF;
+				blockToAccess.data[offset + 3] = (word      ) & 0xFF;
+				blockToAccess.accessCount += 1;
+				blockToAccess.lru.value = readWriteCount;
+				return;
+			}
+			if (set.block[i].valid == INVALID) {
 				// If a block in the set is invalid, then use this to write to
 				blockToAccess = set.block[i];
 				blockToAccess.valid = VALID;
