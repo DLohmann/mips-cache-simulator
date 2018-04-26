@@ -280,7 +280,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		}
 
 		printf("Read miss\n");
-		accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
+		//accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
 
 		cacheBlock * toReplace = replacementPolicy(set);
 
@@ -322,8 +322,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			
 		TransferUnit transfer_bytes = uint_log2(block_size);
 		accessDRAM(addr, (byte *)&(blockToAccess->data), transfer_bytes, READ);
-		
-		
+
+		memcpy(data, &(blockToAccess->data), 4);	// WORD_SIZE correspondsto 4 bytes
 		
 		//set valid bit
 		toReplace->valid = VALID;
