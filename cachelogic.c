@@ -279,6 +279,12 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			}
 		}
 
+		printf("It's a reads!"); //cache miss
+		accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
+
+		return;
+		printf("It's a readz!");
+
 		cacheBlock * toReplace = replacementPolicy(set);
 
 		
@@ -315,13 +321,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		// LOAD BLOCK FROM MEMORY TO CACHE
 		// Load the entire cache block from memory to cache before reading to CPU's from cache block 
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
-		for (int i = 0; i < block_size; i++) {
-			//if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
-			//	continue;
-			//}
 			
-			accessDRAM(addrToSave + i, (byte *)&(blockToAccess[i]), BYTE_SIZE, READ);
-		}
+		accessDRAM(addr, (byte *)&(blockToAccess->data[0]), WORD_SIZE, READ);
 		
 		
 		
@@ -333,7 +334,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		toReplace->lru.value = readWriteCount++;
 		toReplace->accessCount++;
 		//Now load from cache to requested address.
-		memcpy(data, &(toReplace->data[offset]), 4);
+		//memcpy(data, &(toReplace->data[offset]), 4);
 
 	} else {
 		printf ("Error: neither read nor write!!!\n");
