@@ -320,7 +320,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		// Load the entire cache block from memory to cache before reading to CPU's from cache block 
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 			
-		accessDRAM(addr, (byte *)&(blockToAccess->data[0]), WORD_SIZE, READ);
+		TransferUnit transfer_bytes = uint_log2(block_size);
+		accessDRAM(addr, (byte *)&(blockToAccess->data), transfer_bytes, READ);
 		
 		
 		
