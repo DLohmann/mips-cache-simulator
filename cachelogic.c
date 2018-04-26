@@ -265,7 +265,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		
 		
 	} else if (we == READ) {
-		printf("It's a read!");
+		printf("It's a read!\n");
 		// FIND WHICH BLOCK TO read from
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) 
@@ -279,11 +279,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			}
 		}
 
-		printf("It's a reads!"); //cache miss
+		printf("Read miss\n");
 		accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
-
-		return;
-		printf("It's a readz!");
 
 		cacheBlock * toReplace = replacementPolicy(set);
 
@@ -291,6 +288,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		// REPLACE THE BLOCK toReplace
 		// if the block's dirty bit is set, then we must save it to memory before replacing
 		if (toReplace->dirty == DIRTY) {
+			printf("Dirty block\n");
 			//save cache block to memory
 			
 			
