@@ -90,6 +90,7 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 
 		break;
 
+	//No need to implement, oh well.
 	case LFU:	// find the block with the least accessCount stamp 
 		toReplace = &(set->block[0]);
 		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
@@ -265,7 +266,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		
 		
 	} else if (we == READ) {
-		printf("It's a read!");
+		printf("It's a read!\n");
 		// FIND WHICH BLOCK TO read from
 		// Do this by: Iterate through set, and check if any block in set is invalid
 		for (int i = 0; i < assoc; i++) 
@@ -279,12 +280,16 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			}
 		}
 
+		printf("Read miss\n");
+		//accessDRAM(addr, (byte*)data, WORD_SIZE, READ);
+
 		cacheBlock * toReplace = replacementPolicy(set);
 
 		
 		// REPLACE THE BLOCK toReplace
 		// if the block's dirty bit is set, then we must save it to memory before replacing
 		if (toReplace->dirty == DIRTY) {
+			printf("Dirty block\n");
 			//save cache block to memory
 			
 			
@@ -315,15 +320,12 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		// LOAD BLOCK FROM MEMORY TO CACHE
 		// Load the entire cache block from memory to cache before reading to CPU's from cache block 
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
-		for (int i = 0; i < block_size; i++) {
-			//if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
-			//	continue;
-			//}
 			
-			accessDRAM(addrToSave + i, (byte *)&(blockToAccess[i]), BYTE_SIZE, READ);
-		}
 		
-		
+		TransferUnit transfer_bytes = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
+		accessDRAM(addr, (byte *)&(blockToAccess->data), transfer_bytes, READ);
+
+		memcpy(data, &(blockToAccess->data[offset]), 4);	// WORD_SIZE correspondsto 4 bytes
 		
 		//set valid bit
 		toReplace->valid = VALID;
@@ -333,7 +335,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		toReplace->lru.value = readWriteCount++;
 		toReplace->accessCount++;
 		//Now load from cache to requested address.
-		memcpy(data, &(toReplace->data[offset]), 4);
+		//memcpy(data, &(toReplace->data[offset]), 4);
 
 	} else {
 		printf ("Error: neither read nor write!!!\n");
