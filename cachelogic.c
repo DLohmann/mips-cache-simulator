@@ -285,7 +285,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
 				memcpy(data, &(set->block[i].data[offset]), 4);	// WORD_SIZE corresponds to 4 bytes
-				decrementLRUs(set, blockToAccess->lru.value);
+				decrementLRUs(set, set->block[i].lru.value);
 				set->block[i].lru.value = assoc - 1;	//readWriteCount++;
 				set->block[i].accessCount++;
 				return;
