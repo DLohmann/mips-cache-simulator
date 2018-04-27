@@ -115,7 +115,7 @@ void decrementLRUs(cacheSet * set, int value)
 {
 	for (int i = 0; i < assoc; i++)
 	{
-		if (set->block[i].lru.value >= value)
+		if (set->block[i].lru.value > value)
 			set->block[i].lru.value--;
 	}
 }
@@ -193,6 +193,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 				blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
 				blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
 				blockToAccess->accessCount += 1;
+				decrementLRUs(set, blockToAccess->lru.value);
 				blockToAccess->lru.value = assoc - 1;	//readWriteCount++;
 				return;
 			}
@@ -260,6 +261,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		blockToAccess->data[offset + 1] = (*data >> 16) & 0xFF;
 		blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
 		blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
+		decrementLRUs(set, blockToAccess->lru.value);
 		blockToAccess->lru.value = assoc - 1;	//readWriteCount++;
 		blockToAccess->accessCount += 1;
 		blockToAccess->dirty = DIRTY;
@@ -282,7 +284,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		{
 			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
-				memcpy(data, &(set->block[i].data[offset]), 4);	// WORD_SIZE correspondsto 4 bytes
+				memcpy(data, &(set->block[i].data[offset]), 4);	// WORD_SIZE corresponds to 4 bytes
+				decrementLRUs(set, blockToAccess->lru.value);
 				set->block[i].lru.value = assoc - 1;	//readWriteCount++;
 				set->block[i].accessCount++;
 				return;
@@ -341,6 +344,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		//set LRU and accessCount
 		//set->block[i].lru.value = readWriteCount++;
 		//set->block[i].accessCount++;
+		decrementLRUs(set, blockToAccess->lru.value);
 		toReplace->lru.value = assoc - 1;	//readWriteCount++;
 		toReplace->accessCount++;
 		//Now load from cache to requested address.
