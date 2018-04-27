@@ -63,10 +63,10 @@ void init_lfu(int assoc_index, int block_index)
 */
 void init_lru(int assoc_index, int block_index)
 {
-	cache[assoc_index].block[block_index].lru.value = 0;
+	cache[assoc_index].block[block_index].lru.value = block_index;	// initialize lru value to block index, so that each block will have a different lru value. This means that each block should have a unique lru value, and there will always be a minimum least recently used block
 }
 
-int readWriteCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
+//int readWriteCount = 0;	// counts how many reads have been done so far. Used for finding LRU info
 
 // returns a pointer to the block to replace
 cacheBlock * replacementPolicy(cacheSet * set) {
@@ -184,7 +184,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 				blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
 				blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
 				blockToAccess->accessCount += 1;
-				blockToAccess->lru.value = readWriteCount++;
+				blockToAccess->lru.value = assoc - 1;	//readWriteCount++;
 				return;
 			}
 			if (set->block[i].valid == INVALID) {
@@ -251,7 +251,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		blockToAccess->data[offset + 1] = (*data >> 16) & 0xFF;
 		blockToAccess->data[offset + 2] = (*data >>  8) & 0xFF;
 		blockToAccess->data[offset + 3] = (*data      ) & 0xFF;
-		blockToAccess->lru.value = readWriteCount++;
+		blockToAccess->lru.value = assoc - 1;	//readWriteCount++;
 		blockToAccess->accessCount += 1;
 		blockToAccess->dirty = DIRTY;
 		//for (int i = 0; i < block_size; i++) {
@@ -274,7 +274,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			if (set->block[i].tag == tag && set->block[i].valid == VALID)
 			{
 				memcpy(data, &(set->block[i].data[offset]), 4);	// WORD_SIZE correspondsto 4 bytes
-				set->block[i].lru.value = readWriteCount++;
+				set->block[i].lru.value = assoc - 1;	//readWriteCount++;
 				set->block[i].accessCount++;
 				return;
 			}
@@ -332,7 +332,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		//set LRU and accessCount
 		//set->block[i].lru.value = readWriteCount++;
 		//set->block[i].accessCount++;
-		toReplace->lru.value = readWriteCount++;
+		toReplace->lru.value = assoc - 1;	//readWriteCount++;
 		toReplace->accessCount++;
 		//Now load from cache to requested address.
 		//memcpy(data, &(toReplace->data[offset]), 4);
