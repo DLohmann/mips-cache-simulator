@@ -90,6 +90,7 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 
 		break;
 
+	//No need to implement, oh well.
 	case LFU:	// find the block with the least accessCount stamp 
 		toReplace = &(set->block[0]);
 		for (int i = 1; i < assoc; i++) {	// there are "assoc" number of blocks in a set
@@ -320,7 +321,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		// Load the entire cache block from memory to cache before reading to CPU's from cache block 
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 			
-		TransferUnit transfer_bytes = uint_log2(block_size);
+		
+		TransferUnit transfer_bytes = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
 		accessDRAM(addr, (byte *)&(blockToAccess->data), transfer_bytes, READ);
 
 		memcpy(data, &(blockToAccess->data[offset]), 4);	// WORD_SIZE correspondsto 4 bytes
