@@ -111,6 +111,15 @@ cacheBlock * replacementPolicy(cacheSet * set) {
 	return toReplace;
 }
 
+void decrementLRUs(cacheSet * set, int value)
+{
+	for (int i = 0; i < assoc; i++)
+	{
+		if (set->block[i].lru.value >= value)
+			set->block[i].lru.value--;
+	}
+}
+
 /*
 	This is the primary function you are filling out,
 	You are free to add helper functions if you need them
