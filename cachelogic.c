@@ -248,13 +248,9 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		// LOAD BLOCK FROM MEMORY TO CACHE
 		// Load the entire cache block from memory to cache before writing from CPU's data to cache block 
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
-		for (int i = 0; i < block_size; i++) {
-			//if (i == offset || i == offset + 1 || i == offset + 2 || i == offset + 3) {
-			//	continue;
-			//}
-			
-			accessDRAM(addrToSave + i, (byte*)&(blockToAccess[i]), BYTE_SIZE, READ);
-		}
+		
+		TransferUnit transferUnit = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
+		accessDRAM(addrToSave + i, (byte*)&(blockToAccess), transferUnit, READ);
 		
 		//Write to the block from the CPU's data
 		blockToAccess->data[offset    ] = (*data >> 24) & 0xFF;
@@ -334,8 +330,8 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 			
 		
-		TransferUnit transfer_bytes = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
-		accessDRAM(addr, (byte *)&(blockToAccess->data), transfer_bytes, READ);
+		TransferUnit transferUnit = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
+		accessDRAM(addr, (byte *)&(blockToAccess->data), transferUnit, READ);
 
 		memcpy(data, &(blockToAccess->data[offset]), 4);	// WORD_SIZE correspondsto 4 bytes
 		
