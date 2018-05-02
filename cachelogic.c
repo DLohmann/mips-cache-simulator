@@ -250,7 +250,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 		int addrToSave = addr & (tagMask | indexMask);		// address to save to will have same tag and index as addr
 		
 		TransferUnit transferUnit = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
-		accessDRAM(addrToSave + i, (byte*)&(blockToAccess), transferUnit, READ);
+		accessDRAM(addrToSave, (byte*)&(blockToAccess), transferUnit, READ);
 		
 		//Write to the block from the CPU's data
 		blockToAccess->data[offset    ] = (*data >> 24) & 0xFF;
