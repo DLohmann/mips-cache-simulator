@@ -304,7 +304,7 @@ void accessMemory(address addr, word* data, WriteEnable we) {
 			// save every byte in block to replace. Save the entire block from the cache to memory (because it's about to be replaced)
 			TransferUnit transferUnit = uint_log2(block_size); //Determine how many bytes we need to copy from memory to fill the block.
 			int addrToSave = (((toReplace->tag)<<indexLength)<<offsetLength) | (index << offsetLength);
-			accessDRAM(addrToSave, (byte*)&(toReplace->data[i]), transferUnit, WRITE);
+			accessDRAM(addrToSave, (byte*)&(toReplace->data), transferUnit, WRITE);
 			//at this point, the entire block should be saved to DRAM
 			//addrToSave = (tag << indexLength) << offsetLength;
 			//addrToSave = //addrToSave | (index << offsetLength);
